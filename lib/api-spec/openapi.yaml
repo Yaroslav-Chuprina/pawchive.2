@@ -1,0 +1,635 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Pawchive API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: posts
+    description: Post operations
+  - name: media
+    description: Media item operations
+  - name: downloads
+    description: Download task operations
+  - name: library
+    description: Library asset operations
+  - name: scanner
+    description: Scanner operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List all posts
+      parameters:
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Not found
+
+  /posts/{id}/media:
+    get:
+      operationId: getPostMedia
+      tags: [media]
+      summary: Get media items for a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of media items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+
+  /posts/{id}/media/{media_id}:
+    patch:
+      operationId: updateMediaStatus
+      tags: [media]
+      summary: Update a media item's status or local path
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: media_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaItemUpdate"
+      responses:
+        "200":
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+        "404":
+          description: Not found
+
+  /posts/stats:
+    get:
+      operationId: getPostStats
+      tags: [posts]
+      summary: Get post statistics summary
+      responses:
+        "200":
+          description: Post stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostStats"
+
+  /scanner/sources:
+    get:
+      operationId: listSources
+      tags: [scanner]
+      summary: List scanned sources
+      responses:
+        "200":
+          description: List of sources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Source"
+
+  /scanner/sources/{id}:
+    patch:
+      operationId: acknowledgeSource
+      tags: [scanner]
+      summary: Acknowledge new posts for a source (clears new_posts_count)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Source"
+        "404":
+          description: Not found
+
+  /scanner/scan:
+    post:
+      operationId: startScan
+      tags: [scanner]
+      summary: Start scanning a source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanInput"
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+
+  /scanner/log:
+    get:
+      operationId: getScanLog
+      tags: [scanner]
+      summary: Get recent scanner log entries
+      responses:
+        "200":
+          description: Log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanLogEntry"
+
+  /downloads:
+    get:
+      operationId: listDownloads
+      tags: [downloads]
+      summary: List download tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of download tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DownloadTask"
+
+  /downloads/queue:
+    post:
+      operationId: queueDownload
+      tags: [downloads]
+      summary: Queue a download task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DownloadInput"
+      responses:
+        "201":
+          description: Queued download task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadTask"
+
+  /downloads/{id}:
+    get:
+      operationId: getDownload
+      tags: [downloads]
+      summary: Get a download task by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Download task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadTask"
+
+  /downloads/stats:
+    get:
+      operationId: getDownloadStats
+      tags: [downloads]
+      summary: Get download statistics
+      responses:
+        "200":
+          description: Download stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadStats"
+
+  /library:
+    get:
+      operationId: listLibrary
+      tags: [library]
+      summary: List library assets
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+        - name: author
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of library assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LibraryAsset"
+
+  /library/{id}:
+    get:
+      operationId: getLibraryAsset
+      tags: [library]
+      summary: Get a library asset by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Library asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryAsset"
+        "404":
+          description: Not found
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get app settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update app settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    Post:
+      type: object
+      required: [id, author, title, post_url, post_date, status, media_count, downloaded_count]
+      properties:
+        id:
+          type: integer
+        author:
+          type: string
+        title:
+          type: string
+        body_text:
+          type: ["string", "null"]
+        post_url:
+          type: string
+        post_date:
+          type: string
+        preview_url:
+          type: ["string", "null"]
+        media_count:
+          type: integer
+        downloaded_count:
+          type: integer
+        status:
+          type: string
+          description: "new | partial | saved"
+        tags:
+          type: ["string", "null"]
+
+    MediaItem:
+      type: object
+      required: [id, post_id, filename, media_type, status]
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: integer
+        filename:
+          type: string
+        media_type:
+          type: string
+          description: "image | video | audio | file"
+        url:
+          type: ["string", "null"]
+        local_path:
+          type: ["string", "null"]
+        file_size:
+          type: ["integer", "null"]
+        status:
+          type: string
+          description: "available | queued | downloading | done | error | missing"
+        thumbnail_url:
+          type: ["string", "null"]
+
+    MediaItemUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        local_path:
+          type: ["string", "null"]
+
+    DownloadTask:
+      type: object
+      required: [id, post_id, status, created_at]
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: integer
+        post_title:
+          type: ["string", "null"]
+        author:
+          type: ["string", "null"]
+        media_item_id:
+          type: ["integer", "null"]
+        filename:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "queued | running | done | error"
+        progress:
+          type: ["integer", "null"]
+        error_message:
+          type: ["string", "null"]
+        local_path:
+          type: ["string", "null"]
+        created_at:
+          type: string
+        completed_at:
+          type: ["string", "null"]
+
+    DownloadInput:
+      type: object
+      required: [post_id]
+      properties:
+        post_id:
+          type: integer
+        media_item_id:
+          type: ["integer", "null"]
+
+    DownloadStats:
+      type: object
+      required: [total, queued, running, done, error]
+      properties:
+        total:
+          type: integer
+        queued:
+          type: integer
+        running:
+          type: integer
+        done:
+          type: integer
+        error:
+          type: integer
+
+    LibraryAsset:
+      type: object
+      required: [id, filename, media_type, status, created_at]
+      properties:
+        id:
+          type: integer
+        post_id:
+          type: ["integer", "null"]
+        post_title:
+          type: ["string", "null"]
+        author:
+          type: ["string", "null"]
+        filename:
+          type: string
+        media_type:
+          type: string
+        local_path:
+          type: ["string", "null"]
+        file_size:
+          type: ["integer", "null"]
+        status:
+          type: string
+          description: "available | missing"
+        thumbnail_url:
+          type: ["string", "null"]
+        created_at:
+          type: string
+
+    Source:
+      type: object
+      required: [id, url, name, last_scanned, post_count, new_posts_count]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        name:
+          type: string
+        last_scanned:
+          type: ["string", "null"]
+        post_count:
+          type: integer
+        new_posts_count:
+          type: integer
+          description: "Number of new posts found since last acknowledgement"
+        status:
+          type: string
+
+    ScanInput:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    ScanResult:
+      type: object
+      required: [discovered, source_name]
+      properties:
+        discovered:
+          type: integer
+        source_name:
+          type: string
+        new_posts:
+          type: integer
+        log:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanLogEntry"
+
+    ScanLogEntry:
+      type: object
+      required: [timestamp, level, message]
+      properties:
+        timestamp:
+          type: string
+        level:
+          type: string
+          description: "info | warn | error"
+        message:
+          type: string
+
+    PostStats:
+      type: object
+      required: [total, new_count, partial_count, saved_count, total_media]
+      properties:
+        total:
+          type: integer
+        new_count:
+          type: integer
+        partial_count:
+          type: integer
+        saved_count:
+          type: integer
+        total_media:
+          type: integer
+
+    Settings:
+      type: object
+      required: [id, download_path, library_path, app_version]
+      properties:
+        id:
+          type: integer
+        download_path:
+          type: string
+        library_path:
+          type: string
+        app_version:
+          type: string
+        max_concurrent_downloads:
+          type: integer
+        auto_scan:
+          type: boolean
+        auto_scan_interval:
+          type: ["integer", "null"]
+        patreon_access_token:
+          type: ["string", "null"]
+
+    SettingsUpdate:
+      type: object
+      properties:
+        download_path:
+          type: string
+        library_path:
+          type: string
+        max_concurrent_downloads:
+          type: integer
+        auto_scan:
+          type: boolean
+        auto_scan_interval:
+          type: ["integer", "null"]
+        patreon_access_token:
+          type: ["string", "null"]
