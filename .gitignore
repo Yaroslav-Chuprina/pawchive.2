@@ -1,0 +1,15 @@
+bin/
+obj/
+
+*.user
+*.suo
+*.rsuser
+.vs/
+
+TestResults/
+*.ncrunch*
+
+*.log
+*.db
+*.db-shm
+*.db-wal
